@@ -61,20 +61,6 @@
       potlifts <- rbind(SB_potlifts, SS_potlifts) %>%
         filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE" & is.na(GEAR_CODE) == TRUE | GEAR_CODE == "") %>% 
         mutate(BUOY = paste0("X", BUOY)) 
-
-    
-      tagging <- list.files("./Data/", pattern = "TAGGING", ignore.case = TRUE) %>% #MAY NEED TO CHANGE
-        purrr::map_df(~read.csv(paste0("./Data/", .x)) %>% select(!CAPTURE_SPN)) %>%
-        filter(is.na(LON_MIN) == FALSE) 
-      
-      #hardcoding common release point for these hotspots for mapping purposes;
-      #actual release points are slightly different and can be found in tagging file
-      
-      tagging$LAT_MIN[which(tagging$DISK %in% 957:961)] <- 3.18
-      tagging$LAT_MIN[which(tagging$DISK %in% c(963:966, 956))] <- 53.29
-      
-      tagging$LON_MIN[which(tagging$DISK %in% 957:961)] <- 26.9
-      tagging$LON_MIN[which(tagging$DISK %in% c(963:966, 956))] <- 20.42
       
   # Read in spatial layers for mapping purposes 
       # Set crs
@@ -158,15 +144,7 @@
                       SPECIES_CODE, SEX, LENGTH, WIDTH, SAMPLING_FACTOR, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, 
                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
                       CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x) -> specimen_table
-      
-  # Changing mature barren females to immature for Summer Bay (determined all females
-  # coded as mature barren were immature after seeing more immature females in the 
-  # last couple of strings in the survey, comparing to mature females, Silver Spray data
-  # (the other research vessel), and various other references)
-      specimen_table %>%
-        dplyr::mutate(CLUTCH_SIZE = ifelse((VESSEL == "Summer Bay" & SEX == 2 & EGG_CONDITION == 0 
-                                     & EGG_COLOR == 0), 0, CLUTCH_SIZE),
-                      LENGTH = ifelse((VESSEL == "Silver Spray" & SPN == 149 & LENGTH > 200), 158.93, LENGTH)) -> specimen_table
+ 
      
   # Process specimen table for Oracle, save
       specimen_table %>%
