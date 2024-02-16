@@ -48,6 +48,7 @@ raw_specimen <- list.files("./Data/Trawl Data/Raw Data - FTP/", pattern = "_SPEC
 
 raw_specimen_bio<- list.files("./Data/Trawl Data/Raw Data - FTP/", pattern = "_SPECIMEN_BIOMETRICS") %>% 
   purrr::map_df(~read.csv(paste0("./Data/Trawl Data/Raw Data - FTP/", .x))) %>%
-  right_join(., catch %>% select(HAUL, HAUL_ID, RECORDING_DEVICE))
+  right_join(., catch %>% dplyr::select(HAUL, HAUL_ID, RECORDING_DEVICE)) %>%
+  distinct()
 
 # Read in haul table
