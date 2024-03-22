@@ -18,8 +18,9 @@ library(tidyverse)
 # LOAD CRAB DATA -----------------------------------------------------------------------------------------------------------------
 
   # Set trawl data filepath
-    path <- "./Data/Trawl Data/"
-  
+    # path <- "./Data/Trawl Data/"
+    path <- "Y:/KOD_Survey/CPS2/Data/Trawl Data/"  
+
   # Load summary catch and specimen tables
     # **delete catch and specimen files 0015, 0019, 0021, 0022, 0028, 0030, 0031 because no data
     catch <- list.files(paste0(path, "Catch - FTP/")) %>% 
