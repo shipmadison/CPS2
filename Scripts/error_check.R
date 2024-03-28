@@ -76,7 +76,7 @@ error_chk <- function(method, specimen_table, catch_summary, potlifts, haul, cpu
   
   
   # 7) Are clutch size codes valid for females?
-    if(FALSE %in% (unique(filter(specimen_table, SEX != 1)$CLUTCH_SIZE %in% c(0:6))) == TRUE){
+    if(FALSE %in% (unique(filter(specimen_table, SEX != 1)$CLUTCH_SIZE %in% c(0:6, 999))) == TRUE){
       print("ERROR: invalid female clutch size code (not 0:6)")
     }
   
