@@ -19,18 +19,7 @@
                 potlifts = potlifts, 
                 haul = NULL, 
                 cpue = pot_cpue)
-    
-      ## **DOn't really need CPUE calculations right now??
-
-    # standard function for mapping, with inputs for sex/mat or species??
-    # Map CPUE by pot and maturity/sex category
-      # source("./Scripts/POT_map_crab.R")
-      
-    # # Process POT bycatch data
-    #   source("./Scripts/.R")
   
-      ## MAKE PLOTS with both pot and trawl data!
-      
   # TRAWL processing
     # Process TRAWL crab data
      source("./Scripts/CPS2_TRAWL_processing.R")
@@ -42,13 +31,22 @@
                 potlifts = NULL, 
                 haul = hauls, 
                 cpue = trawl_cpue)
-    
-    # Map CPUE by haul and maturity/sex category
-      source("./Scripts/TRAWL_map_crab.R")  
-      
+   
     # Process TRAWL fish data
-      source("./Scripts/.R")
-  
+      source("./Scripts/CPS2_TRAWL_FISH_processing.R")
+      
+      
+      
+    # Map CRAB COUNTS by pot/haul and maturity/sex category
+      # standard function for mapping, with inputs for sex/mat or species??
+      source("./Scripts/map_crab.R")
+      
+    # Map BYCATCH for trawl and pot
+      source("./Scripts/map_fish.R")
+      
+      ## MAKE PLOTS with both pot and trawl data!
+      
+
   #   -- can we make this into one script or one function to source?? 
   #   -- term for pot/trawl, crab/fish...
 
