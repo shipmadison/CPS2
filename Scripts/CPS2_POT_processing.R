@@ -4,11 +4,7 @@
   # 2) To run error checks on processed specimen and catch summaries
   # 3) To calculate and map cpue by pot and maturity/sex category for BBRKC
 
-  # Authors: Emily Ryznar, Shannon Hennessey, NOAA-AFSC
-
-# SH NOTES: --------
-  # Get processing script to output intermediate files for easier parsing of scripts/functions
-  # INCORPORATE SCRIPT FOR TANNER and SNOW CRAB TOO!!
+  # Authors: Shannon Hennessey, Emily Ryznar, NOAA-AFSC
 
 
 # INSTALL PACKAGES ----------------------------------------------------------------------------------------------------------
@@ -55,9 +51,8 @@
       
       raw_specimen <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SPECIMEN_0") %>% 
                       purrr::map_df(~read.csv(paste0(path, "Raw Data - FTP/", .x))) %>%
-                      dplyr::select(HAUL_ID, SPECIMEN_ID, CATCH_SAMPLE_ID, SPECIES_CODE) #%>%
-                      #dplyr::filter(SPECIES_CODE == 69322) # filtering just RKC for now
-                    
+                      dplyr::select(HAUL_ID, SPECIMEN_ID, CATCH_SAMPLE_ID, SPECIES_CODE) 
+      
       raw_specimen_bio <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SPECIMEN_BIOMETRICS") %>% 
                           purrr::map_df(~read.csv(paste0(path, "Raw Data - FTP/", .x))) %>%
                           left_join(., catch %>% select(HAUL, HAUL_ID, RECORDING_DEVICE)) 
@@ -79,7 +74,7 @@
                      # dplyr::select(!c(ADFG.Logger, Cory.temp, X.1, X.2, X.3, X)) # Silver Spray
       
       potlifts <- rbind(SB_potlifts, AL_potlifts) %>%
-                  filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE" & is.na(GEAR_CODE) == TRUE | GEAR_CODE == "") %>%
+                  filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE" & is.na(GEAR_CODE) == TRUE | GEAR_CODE == 44 | GEAR_CODE == "") %>%
                   mutate(BUOY = paste0("X", BUOY))
       
       
@@ -110,10 +105,21 @@
                                     LENGTH = CARAPACE_LENGTH) %>%
                       right_join(., raw_specimen) %>% # need to get catch_sample_id
                       right_join(samples, ., by = c("HAUL", "HAUL_ID", "SEX", "CATCH_SAMPLE_ID", "SPECIES_CODE", "RECORDING_DEVICE"), 
-                                 relationship = "many-to-many") %>%
-                      mutate(LENGTH = ifelse((HAUL == 8 & HAUL_ID == 22 & SPECIMEN_ID == 190) | # modify 2 erroneous small measurements (length x 10)
-                                             (HAUL == 9 & HAUL_ID == 23 & SPECIMEN_ID == 214), 
-                                             LENGTH*10, LENGTH))
+                                 relationship = "many-to-many") #%>%
+                      # mutate(LENGTH = ifelse((HAUL == 8 & HAUL_ID == 22 & SPECIMEN_ID == 190) | # modify 2 erroneous small measurements (length x 10)
+                      #                        (HAUL == 9 & HAUL_ID == 23 & SPECIMEN_ID == 214), 
+                      #                        LENGTH*10, LENGTH)) %>%
+                      # distinct() %>%
+                      # filter(is.na(HAUL) == "FALSE") # filter out haul 118 AL NAs for now
+      
+      # test <- specimen_sum %>% 
+      #   group_by(HAUL, HAUL_ID, CATCH_SAMPLE_ID, SPECIES_CODE, SPECIES_NAME, SEX, TOSSED, RECORDING_DEVICE, SPECIMEN_ID, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, CLUTCH_SIZE, LENGTH) %>% 
+      #   filter(n()>1)
+                      
+      # test <- raw_specimen_bio %>%
+      #   dplyr::group_by(HAUL, HAUL_ID, SPECIMEN_ID, RECORDING_DEVICE, BIOMETRIC_NAME) %>%
+      #   dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
+      #   dplyr::filter(n > 1L) 
       
   # Calculate sampling factor from specimen summary table, join back with specimen_sum file to 
   # get specimen information, join with catch file to get vessel and pot #s, join with potlifts
@@ -141,19 +147,8 @@
                                       SPECIES_CODE, SEX, LENGTH, WIDTH, SAMPLING_FACTOR, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, 
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
                                       CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x) %>%
-                        dplyr::mutate(# modify erroneous BKC observation
-                                      SPECIES_CODE = ifelse((SPECIES_CODE == 69323 & SPN == 70 & VESSEL == "Seabrooke"), 
-                                                            69322, SPECIES_CODE))
+                        dplyr::filter(is.na(POT_ID) == "FALSE") # filter out haul 177 SB NAs for now
       
-  # # Changing mature barren females to immature for Summer Bay (determined all females
-  # # coded as mature barren were immature after seeing more immature females in the 
-  # # last couple of strings in the survey, comparing to mature females, Silver Spray data
-  # # (the other research vessel), and various other references)
-  #     specimen_table %>%
-  #       dplyr::mutate(CLUTCH_SIZE = ifelse((VESSEL == "Summer Bay" & SEX == 2 & EGG_CONDITION == 0 
-  #                                    & EGG_COLOR == 0), 0, CLUTCH_SIZE),
-  #                     LENGTH = ifelse((VESSEL == "Silver Spray" & SPN == 149 & LENGTH > 200), 158.93, LENGTH)) -> specimen_table
-     
   # Process specimen table for Oracle, save
       specimen_table %>%
         dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
@@ -173,6 +168,8 @@
                                            dplyr::mutate(VESSEL = ifelse(VESSEL == 162, "Arctic Lady", "Seabrooke"))) %>%
                        dplyr::select(CRUISE, VESSEL, SPN, POT_ID, SPECIES_CODE, NUMBER_CRAB, N_ENTRIES) %>%
                        na.omit() # bad/gear testing potlifts will have NA for SPN and # crab
+      
+      ## MAKE CODE TO spit out lines where N_CRAB =/= N_ENTRIES??
       
   # Process catch_summary table for Oracle, save
       catch_summary %>%
@@ -241,7 +238,7 @@
                                Snow = MaleSnow + FemaleSnow,
                                Hybrid = MaleHybrid + FemaleHybrid) 
       
-    # Save csv
+    # Save .csv
       write.csv(bycatch, "./Outputs/CPS2_2024_POT_bycatch.csv", row.names = FALSE)
   
     
