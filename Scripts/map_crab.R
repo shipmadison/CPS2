@@ -10,6 +10,9 @@
 
 # LOAD DATA -----------------------------------------------------------------------------------------------------------------
 
+  # Load mapping layers
+    source("./Scripts/map_setup.R")
+
   # Read in POT and TRAWL data
     pot_cpue <- read.csv("./Outputs/CPS2_2024_potcatch.csv") %>%
                 dplyr::rename(HAUL = SPN,
@@ -17,7 +20,7 @@
     trawl_cpue <- read.csv("./Outputs/CPS2_2024_trawlcatch.csv")
     
     
-# MAP BBRKC POT CPUE --------------------------------------------------------------------------------------------------------
+# MAP BBRKC POT COUNT --------------------------------------------------------------------------------------------------------
     
   # Combine pot and trawl counts into one dataframe
     cpue <- trawl_cpue %>% 
@@ -51,12 +54,12 @@
                                     "Immature male (< 120mm)", "Legal male (>= 135mm)", "Sublegal male"),
                            MAT_SEX = c("Mature female", "Immature female", "Mature male", "Immature male","Legal male", "Sublegal male"))
     
+    mat_sex_combos <- c("Mature male", "Immature male", "Mature female", "Immature female", "Legal male", "Sublegal male")
+    
   # Specify palette
     pot_pal <- viridis::mako(10) 
     trawl_pal <- viridis::rocket(10)
-      
     
-    library(ggh4x)
     
   # Plot total counts
     total.map <-  ggplot() +
@@ -218,3 +221,4 @@
              height = 7, width = 10, units = "in")
     }
     
+  
