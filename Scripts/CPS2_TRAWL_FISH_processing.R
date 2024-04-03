@@ -8,42 +8,43 @@
 
 
 # INSTALL PACKAGES ----------------------------------------------------------------------------------------------------------
-#install.packages("tidyverse")
+    #install.packages("tidyverse")
 
 
 # LOAD PACKAGES -------------------------------------------------------------------------------------------------------------
-library(tidyverse)
+    library(tidyverse)
 
 
 # LOAD FISH DATA -----------------------------------------------------------------------------------------------------------------
 
   # Set trawl data filepath
-    path <- "Y:/KOD_Survey/CPS2/Data/Trawl Data/" 
+      path <- "Y:/KOD_Survey/CPS2/Data/Trawl Data/Groundfish/" 
 
-    # Load summary catch tables to get full species list
-      catch <- list.files(paste0(path, "Groundfish Catch - FTP/")) %>%
-               purrr::map_df(~read.csv(paste0(path, "Groundfish Catch - FTP/", .x))) %>%
+  # Load summary catch tables to get full species list
+      catch <- list.files(paste0(path, "Catch - FTP/")) %>%
+               purrr::map_df(~read.csv(paste0(path, "Catch - FTP/", .x))) %>%
                dplyr::select(SPECIES_CODE, SPECIES_NAME) %>%
                distinct()
 
-    # Load raw data for processing below
-      raw_sample <- list.files(paste0(path, "Groundfish Raw - FTP/"), pattern = "_SAMPLE_0") %>% # RECORDS of SAMPLE INFO
-                    purrr::map_df(~read.csv(paste0(path, "Groundfish Raw - FTP/", .x))) #E.G. SEX, SPECIES
+  # Load raw data for processing below
+      raw_sample <- list.files(paste0(path, "Raw - FTP/"), pattern = "_SAMPLE_0") %>% # RECORDS of SAMPLE INFO
+                    purrr::map_df(~read.csv(paste0(path, "Raw - FTP/", .x))) #E.G. SEX, SPECIES
 
-      raw_sample_values <- list.files(paste0(path, "Groundfish Raw - FTP/"), pattern = "_CATCH_VALUE") %>% # RECORDS OF WEIGHT TOSSED
-                           purrr::map_df(~read.csv(paste0(path, "Groundfish Raw - FTP/", .x))) 
+      raw_sample_values <- list.files(paste0(path, "Raw - FTP/"), pattern = "_CATCH_VALUE") %>% # RECORDS OF WEIGHT TOSSED
+                           purrr::map_df(~read.csv(paste0(path, "Raw - FTP/", .x))) 
 
-      raw_haul <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_HAUL_0") %>%
-                  purrr::map_df(~ read.csv(paste0(path, "Raw Data - FTP/", .x))) %>%
-                  dplyr::mutate(STATION = ifelse((HAUL == 37 & HAUL_ID == 24), "T5", STATION)) # manually specify T5 because not showing up for some reason
-
-    # Read in haul data
-      hauls <- read.csv(paste0(path, "VA_HAULS.csv")) %>% # Vesteraalen
+      raw_haul <- list.files(paste0(path, "Raw - FTP/"), pattern = "_HAUL_0") %>%
+                  purrr::map_df(~ read.csv(paste0(path, "Raw - FTP/", .x))) %>%
+                  select(-c(WEIGHT, WEIGHT_UNITS))
+      
+      
+  # Read in haul data
+      hauls <- read.csv("Y:/KOD_Survey/CPS2/Data/Trawl Data/VA_HAULS.csv") %>% # Vesteraalen
                dplyr::filter(SAMPLED == 1)
 
 
 # PROCESS FISH DATA ----------------------------------------------------------------------------------------------------------------
-    # Join raw_sample_values and raw_sample to get total weight per species per haul
+  # Join raw_sample_values and raw_sample to get total weight per species per haul
       samples <- left_join(raw_sample_values %>% select(CATCH_SAMPLE_VALUE_ID, CATCH_SAMPLE_ID, SAMPLE_VALUE_WEIGHT, SAMPLE_VALUE_WEIGHT_UNITS,
                                                           SAMPLE_VALUE_COUNT, KEEP_FLAG, RECORDING_DEVICE, RECORDER), 
                              raw_sample %>% select(HAUL_ID, CATCH_SAMPLE_ID, SPECIES_CODE, RECORDING_DEVICE, RECORDER), 
@@ -66,9 +67,9 @@ library(tidyverse)
                    # dplyr::select(HAUL, HAUL_ID, CATCH_SAMPLE_ID, WEIGHT, SPECIES_CODE, SPECIES_NAME, RECORDING_DEVICE) %>%
                     
 
-    # Calculate sampling factor from samples, join back with samples file to 
-    # get specimen information, join with raw_haul file to get haul and station #s, join with hauls
-    # file to get lat/lon, set/haul date and time for each haul (with positive catch)
+  # Calculate sampling factor from samples, join back with samples file to 
+  # get specimen information, join with raw_haul file to get haul and station #s, join with hauls
+  # file to get lat/lon, set/haul date and time for each haul (with positive catch)
       specimen_table <- samples %>%
                         # dplyr::group_by(HAUL, HAUL_ID, CATCH_SAMPLE_ID, RECORDING_DEVICE) %>%
                         dplyr::reframe(FLATFISH = ifelse(SPECIES_CODE %in% c(10210, 10220, 10261, 10285, 10110, 10130,
@@ -76,7 +77,8 @@ library(tidyverse)
                         right_join(., samples) %>%
                         dplyr::group_by(HAUL, HAUL_ID, RECORDING_DEVICE) %>%
                         dplyr::mutate(IDENT = sum(WEIGHT[FLATFISH == 1]), across(),
-                                      SAMPLING_FACTOR = (sum(IDENT) + sum(WEIGHT[SPECIES_NAME == "flatfish unid."]))/sum(IDENT), across()) %>%
+                                      UNIDENT = sum(WEIGHT[SPECIES_NAME == "flatfish unid."]), across(),
+                                      SAMPLING_FACTOR = (IDENT + UNIDENT)/IDENT) %>%
                         # remove unidentified flatfish bin
                         dplyr::filter(!SPECIES_CODE == 10001) %>% 
                         # set sampling factor to 1 if not a flatfish
@@ -90,8 +92,36 @@ library(tidyverse)
                         dplyr::select(CRUISE, VESSEL, HAUL, STATION, LAT_DD, LON_DD, #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F,
                                       SPECIES_CODE, SPECIES_NAME, WEIGHT, SAMPLING_FACTOR) %>%
                         dplyr::mutate(CALC_WEIGHT = WEIGHT*SAMPLING_FACTOR)
-  
       
     # Save .csv
-      write.csv(specimen_table, "./Outputs/CPS2_2024_TRAWL_bycatch.csv", row.names = FALSE)
+        write.csv(specimen_table, "./Outputs/CPS2_2024_TRAWL_FISH_catch.csv", row.names = FALSE)
       
+        
+    # Reframe and aggregate calculated weights by main bycatch species (to match POT bycatch dataframe)
+        fish_sum <- specimen_table %>%
+                    # dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, SPECIES_NAME, SPECIES_CODE) %>%
+                    # dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
+                    # dplyr::filter(!SPECIES_CODE %in% c(69322)) %>%
+                    dplyr::mutate(SPP_LABS = dplyr::case_when(SPECIES_NAME == "Pacific cod" ~ "PacificCod",
+                                                              SPECIES_NAME == "Pacific halibut" ~ "Halibut",
+                                                              SPECIES_NAME == "great sculpin" ~ "GreatSculpin", 
+                                                              SPECIES_NAME == "yellowfin sole" ~ "YellowfinSole", 
+                                                              SPECIES_NAME == "walleye pollock" ~ "Pollock", 
+                                                              SPECIES_NAME == "starry flounder" ~ "Starry.Flounder", 
+                                                              SPECIES_NAME == "northern rock sole" ~ "RockSole",
+                                                              TRUE ~ "Other")) %>%
+                    dplyr::group_by(VESSEL, STATION, LAT_DD, LON_DD, SPP_LABS) %>%
+                    dplyr::summarise(WEIGHT = sum(CALC_WEIGHT))
+        
+        bycatch_spp <- unique(fish_sum$SPP_LABS)
+        
+        fish_sum %>%
+          dplyr::right_join(expand_grid(SPP_LABS = bycatch_spp,
+                                        hauls)) %>%
+          replace_na(list(WEIGHT = 0, VESSEL = "Vesteraalen")) %>%
+          dplyr::select(VESSEL, STATION, LAT_DD, LON_DD, SPP_LABS, WEIGHT) %>%
+          pivot_wider(., id_cols = c(VESSEL, STATION, LAT_DD, LON_DD,),
+                      names_from = "SPP_LABS", values_from = "WEIGHT") %>%
+          write.csv("./Outputs/CPS2_2024_Trawl_FISH_bycatch.csv", row.names = FALSE)
+      
+  
