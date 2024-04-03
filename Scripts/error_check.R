@@ -4,6 +4,10 @@
 # potlifts and haul can be NULL depending on the method 
 #  (still need to test this...)
 
+
+# Load mapping layers
+  source("./Scripts/map_setup.R")
+
 # Write function
 error_chk <- function(method, specimen_table, catch_summary, potlifts, haul, cpue){
   
@@ -70,8 +74,8 @@ error_chk <- function(method, specimen_table, catch_summary, potlifts, haul, cpu
   
   
   # 6) Are egg condition codes valid for females?"
-    if(FALSE %in% (unique(filter(specimen_table, SEX != 1)$EGG_CONDITION %in% c(0:4))) == TRUE){
-      print("ERROR: invalid female egg condition code (not 0:4)")
+    if(FALSE %in% (unique(filter(specimen_table, SEX != 1)$EGG_CONDITION %in% c(0:5))) == TRUE){
+      print("ERROR: invalid female egg condition code (not 0:5)")
     } 
   
   
