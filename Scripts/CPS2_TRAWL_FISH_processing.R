@@ -88,26 +88,22 @@
                         dplyr::left_join(., hauls %>% select(STATION, LAT_DD, LON_DD)) %>%
                         dplyr::mutate(VESSEL = "Vesteraalen", 
                                       CRUISE = 202301) %>% 
-                        #dplyr::filter(c(is.na(LAT_DD) & is.na(LON_DD) & is.na(SPN)) == FALSE) %>% # bad/gear testing hauls will have NA
                         dplyr::select(CRUISE, VESSEL, HAUL, STATION, LAT_DD, LON_DD, #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F,
                                       SPECIES_CODE, SPECIES_NAME, WEIGHT, SAMPLING_FACTOR) %>%
                         dplyr::mutate(CALC_WEIGHT = WEIGHT*SAMPLING_FACTOR)
       
     # Save .csv
-        write.csv(specimen_table, "./Outputs/CPS2_2024_TRAWL_FISH_catch.csv", row.names = FALSE)
+        write.csv(specimen_table, "./Outputs/CPS2_2024_trawl_fishcatch.csv", row.names = FALSE)
       
         
     # Reframe and aggregate calculated weights by main bycatch species (to match POT bycatch dataframe)
         fish_sum <- specimen_table %>%
-                    # dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, SPECIES_NAME, SPECIES_CODE) %>%
-                    # dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-                    # dplyr::filter(!SPECIES_CODE %in% c(69322)) %>%
                     dplyr::mutate(SPP_LABS = dplyr::case_when(SPECIES_NAME == "Pacific cod" ~ "PacificCod",
                                                               SPECIES_NAME == "Pacific halibut" ~ "Halibut",
                                                               SPECIES_NAME == "great sculpin" ~ "GreatSculpin", 
                                                               SPECIES_NAME == "yellowfin sole" ~ "YellowfinSole", 
                                                               SPECIES_NAME == "walleye pollock" ~ "Pollock", 
-                                                              SPECIES_NAME == "starry flounder" ~ "Starry.Flounder", 
+                                                              SPECIES_NAME == "starry flounder" ~ "StarryFlounder", 
                                                               SPECIES_NAME == "northern rock sole" ~ "RockSole",
                                                               TRUE ~ "Other")) %>%
                     dplyr::group_by(VESSEL, STATION, LAT_DD, LON_DD, SPP_LABS) %>%
@@ -122,6 +118,8 @@
           dplyr::select(VESSEL, STATION, LAT_DD, LON_DD, SPP_LABS, WEIGHT) %>%
           pivot_wider(., id_cols = c(VESSEL, STATION, LAT_DD, LON_DD,),
                       names_from = "SPP_LABS", values_from = "WEIGHT") %>%
-          write.csv("./Outputs/CPS2_2024_Trawl_FISH_bycatch.csv", row.names = FALSE)
+          select(VESSEL, STATION, LAT_DD, LON_DD, PacificCod, Halibut, 
+                 GreatSculpin, YellowfinSole, Pollock, StarryFlounder, RockSole, Other) %>%
+          write.csv("./Outputs/CPS2_2024_trawl_fish_bycatch.csv", row.names = FALSE)
       
   
