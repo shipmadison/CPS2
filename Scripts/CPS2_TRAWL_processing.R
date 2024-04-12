@@ -21,7 +21,7 @@
       path <- "Y:/KOD_Survey/CPS2/Data/Trawl Data/Crab/"  
 
   # Load summary catch and specimen tables
-      # **delete catch and specimen files 0015, 0019, 0021, 0022, 0028, 0030, 0031, 0040, 0053, 0064, 0068, 0088 because no data
+      # **delete catch and specimen files 0015, 0019, 0021, 0022, 0028, 0030, 0031, 0040, 0053, 0064, 0068, 0088, 0128 because no data
       catch <- list.files(paste0(path, "Catch - FTP/")) %>% 
                purrr::map_df(~read.csv(paste0(path, "Catch - FTP/", .x)))
   
@@ -36,10 +36,10 @@
                            purrr::map_df(~read.csv(paste0(path, "Raw Data - FTP/", .x))) 
   
       raw_specimen <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SPECIMEN_0") %>% 
-                      purrr::map_df(~read.csv(paste0(paste0(path, "Raw Data - FTP/", .x)))) 
+                      purrr::map_df(~read.csv(paste0(path, "Raw Data - FTP/", .x))) 
   
       raw_specimen_bio <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SPECIMEN_BIOMETRICS") %>% 
-                          purrr::map_df(~read.csv(paste0(paste0(path, "Raw Data - FTP/", .x)))) %>%
+                          purrr::map_df(~read.csv(paste0(path, "Raw Data - FTP/", .x))) %>%
                           right_join(., catch %>% select(HAUL, HAUL_ID, RECORDING_DEVICE), 
                                      relationship = "many-to-many") %>%
                           distinct()
@@ -98,7 +98,6 @@
                         dplyr::right_join(hauls, ., by = c("STATION"), relationship = "many-to-many") %>%
                         dplyr::mutate(VESSEL = ifelse(VESSEL == 176, "Vesteraalen", ""),
                                       SAMPLING_FACTOR = 1) %>% ## NEED TO DOUBLE CHECK SF (make sure no >1 ever)..this doesn't join right
-                        #dplyr::filter(c(is.na(LAT_DD) & is.na(LON_DD) & is.na(SPN)) == FALSE) %>% # bad/gear testing hauls will have NA
                         dplyr::select(CRUISE, VESSEL, HAUL, STATION, LAT_DD, LON_DD, #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F,
                                       SPECIES_CODE, SPECIES_NAME, SEX, LENGTH, WIDTH, SAMPLING_FACTOR, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, 
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
@@ -112,6 +111,9 @@
   # Process specimen table with all haul data, save
       specimen_table %>% 
         write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
+      
+      specimen_table %>% dplyr::filter(SPECIES_CODE == 69322) %>% # filter just RKC
+        write.csv("./Outputs/CPS2_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
     
   # Update catch summary table with new crab #s from sampling factor
       catch_summary <- specimen_table %>%
@@ -124,33 +126,33 @@
       
   # Print lines where N_CRAB =/= N_ENTRIES
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
-      # R6 - 1 less/more tanner than should be?
+      # R6 - 1 less tanner than should be?
                    
   # Process catch_summary table for Oracle, save
       catch_summary %>%
         dplyr::select(!N_ENTRIES) %>%
         write.csv("./DataForOracle/Processed_Trawl_Catch_Summary.csv", row.names = FALSE)
     
-  # Summarize counts by spp/sex per station
-      crab_sum <- specimen_table %>%
-                  dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, SEX, SPECIES_NAME, SPECIES_CODE) %>%
-                  dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-                  dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
-                  dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
-                                                           (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC",
-                                                           (SPECIES_CODE == 68560 & SEX == 1) ~ "Male bairdi",
-                                                           (SPECIES_CODE == 68560 & SEX == 2) ~ "Female bairdi"))
-
-      spp_sex_combos <- c("Male RKC", "Female RKC", "Male bairdi", "Female bairdi")
-
-      crab_sum %>%
-          dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos, hauls)) %>%
-          replace_na(list(COUNT = 0, VESSEL = "Vesteraalen")) %>%
-          dplyr::select(VESSEL, STATION,LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
-          pivot_wider(., id_cols = c(VESSEL, STATION, LAT_DD, LON_DD,),
-                      names_from = "SPP_SEX", values_from = "COUNT") %>%
-          select(VESSEL, STATION, LAT_DD, LON_DD, "Male RKC", "Female RKC", "Male bairdi", "Female bairdi") %>%
-          write.csv("./Data/TrawlCatchTotals_bySppSexStation.csv", row.names = FALSE)
+  # # Summarize counts by spp/sex per station
+  #     crab_sum <- specimen_table %>%
+  #                 dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, SEX, SPECIES_NAME, SPECIES_CODE) %>%
+  #                 dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
+  #                 dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
+  #                 dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
+  #                                                          (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC",
+  #                                                          (SPECIES_CODE == 68560 & SEX == 1) ~ "Male bairdi",
+  #                                                          (SPECIES_CODE == 68560 & SEX == 2) ~ "Female bairdi"))
+  # 
+  #     spp_sex_combos <- c("Male RKC", "Female RKC", "Male bairdi", "Female bairdi")
+  # 
+  #     crab_sum %>%
+  #         dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos, hauls)) %>%
+  #         replace_na(list(COUNT = 0, VESSEL = "Vesteraalen")) %>%
+  #         dplyr::select(VESSEL, STATION,LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
+  #         pivot_wider(., id_cols = c(VESSEL, STATION, LAT_DD, LON_DD,),
+  #                     names_from = "SPP_SEX", values_from = "COUNT") %>%
+  #         select(VESSEL, STATION, LAT_DD, LON_DD, "Male RKC", "Female RKC", "Male bairdi", "Female bairdi") %>%
+  #         write.csv("./Data/TrawlCatchTotals_bySppSexStation.csv", row.names = FALSE)
                 
     
 # CALCULATE BBRKC CPUE -------------------------------------------------------------------------------------------------------     
@@ -169,11 +171,9 @@
                                                         (SPECIES_CODE == 69322 & SEX == 1 & LENGTH < 135) ~ "Sublegal male")) %>%
                dplyr::filter(is.na(MAT_SEX) == "FALSE")
            
-    
       mat_spec <- rbind(maturity, legal) #bind
     
   
-    
   # Summarize counts by sex/maturity category per station
       mat_spec_sum <- mat_spec %>%
                       dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, MAT_SEX) %>%
