@@ -16,7 +16,7 @@
   # Read in POT and TRAWL data
     pot_cpue <- read.csv("./Outputs/CPS2_2024_potcatch.csv") %>%
                 dplyr::rename(HAUL = SPN,
-                              STATION = BUOY)
+                              STATION = POT_ID)
     trawl_cpue <- read.csv("./Outputs/CPS2_2024_trawlcatch.csv")
     
     
@@ -24,7 +24,7 @@
     
   # Combine pot and trawl counts into one dataframe
     cpue <- trawl_cpue %>% 
-            rbind(., pot_cpue %>% dplyr::select(-c(POT_ID, DATE_SET, TIME_SET, DATE_HAUL, TIME_HAUL, SOAK_TIME, CATCH_PER_HOUR)))
+            rbind(., pot_cpue %>% dplyr::select(-c(BUOY, DATE_SET, TIME_SET, DATE_HAUL, TIME_HAUL, SOAK_TIME, CATCH_PER_HOUR)))
     
     tot_cpue <- cpue %>%
                       dplyr::filter(MAT_SEX %in% c("Mature male", "Immature male", "Mature female", "Immature female")) %>%
@@ -107,8 +107,8 @@
                                        colors = c("gray", rev(trawl_pal[5:length(trawl_pal)]))) +
                   scale_x_continuous(breaks = map_layers$lon.breaks) +
                   scale_y_continuous(breaks = map_layers$lat.breaks) +
-                  labs(title = "2024 BBRKC Collaborative Pot Sampling", subtitle = "Total BBRKC",
-                       caption = "* preliminary information") +
+                  labs(title = "2024 BBRKC Collaborative Pot Sampling", subtitle = "Total BBRKC") + #,
+                       # caption = "* preliminary information") +
         
                   # TRAWL legend
                   guides(size = guide_legend(title = "Trawl Count", title.position = "top", nrow = 2, 
@@ -132,8 +132,8 @@
                         legend.position = "right",
                         legend.direction = "horizontal",
                         plot.title = element_text(face = "bold", size = 15),
-                        plot.subtitle = element_text(size = 12), 
-                        plot.caption = element_text(hjust = 0, face = "italic"))
+                        plot.subtitle = element_text(size = 12)) #, 
+                        # plot.caption = element_text(hjust = 0, face = "italic"))
 
     ggsave(plot = total.map, "./Figures/BBRKC_TOTAL.png", height = 7, width = 10, units = "in")
   
