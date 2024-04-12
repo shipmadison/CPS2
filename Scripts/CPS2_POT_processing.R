@@ -8,23 +8,22 @@
 
 
 # INSTALL PACKAGES ----------------------------------------------------------------------------------------------------------
-  #install.packages("tidyverse")
+  # install.packages("tidyverse")
 
 
 # LOAD PACKAGES -------------------------------------------------------------------------------------------------------------
-  library(tidyverse)
+    library(tidyverse)
 
 
 # LOAD DATA -----------------------------------------------------------------------------------------------------------------
   
   # Set pot data filepath
-      # path <- "./Data/Pot Data/"
       path <- "Y:/KOD_Survey/CPS2/Data/Pot Data/"
 
   # Load summary catch and specimen tables
-      # **delete catch and specimen files 0021, 0022, 0023, 0056-0059, 0238 (AL) because no data
+      # **delete catch and specimen files 0021, 0022, 0023, 0056-0059, 0238, 0312-0314, 0316-0318, 0326 (AL) because no data
       # Load complete files first, need to remove STATION because not present in "UNRESOLVED" catch files
-      catch <- list.files(paste0(path, "Catch - FTP/"), pattern = "SAM 78|SAM 92") %>% 
+      catch <- list.files(paste0(path, "Catch - FTP/"), pattern = "SAM 78|SAM 92|SAM 93") %>% 
                purrr::map_df(~read.csv(paste0(path, "Catch - FTP/", .x)) %>% 
                              mutate(STATION = paste0("X", STATION))) %>% 
                dplyr::select(-c(STATION))
@@ -32,7 +31,8 @@
       # Load "UNRESOLVED" and SAM_90 catch files, bind to above
       catch <- list.files(paste0(path, "Catch - FTP/"), pattern = "UNRESOLVED|SAM_90") %>% # delete files 0001, 0020, 0051-0055 because no data
                purrr::map_df(~read.csv(paste0(path, "Catch - FTP/", .x)) %>%
-                             mutate(RECORDING_DEVICE = "a1f09530ae1081b6")) %>% # replace recording device to match ones in raw_specimen_bio
+                             # replace recording device to match ones in raw_specimen_bio
+                             mutate(RECORDING_DEVICE = "a1f09530ae1081b6")) %>% 
                rbind(catch)
         
       specimen <- list.files(paste0(path, "Specimen - FTP/")) %>%
@@ -41,7 +41,7 @@
       
   # Load raw data for processing below   
       raw_sample <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SAMPLE_0") %>% # RECORDS of SAMPLE INFO
-                    purrr::map_df(~ read.csv(paste0(path, "Raw Data - FTP/", .x))) #E.G. SEX, SPECIES
+                    purrr::map_df(~ read.csv(paste0(path, "Raw Data - FTP/", .x))) # E.G. SEX, SPECIES
       
       raw_sample_values <- list.files(paste0(path, "Raw Data - FTP/"), pattern = "_SAMPLE_VALUES") %>% #RECORDS OF # TOSSED
                            purrr::map_df(~ read.csv(paste0(path, "Raw Data - FTP/", .x))) %>%
@@ -61,22 +61,19 @@
       SB_potlifts <- read.csv(paste0(path, "SB_POTLIFTS.csv")) %>% # Seabrooke
                      filter(!is.na(TIME_HAUL),
                             TIME_HAUL != "") %>%
-                     dplyr::rename(GEAR_CODE = GEAR_Code) %>%
                      dplyr::mutate(TIME_SET = format(strptime(paste0(mapply(function(x, y) paste0(rep(x, y), collapse = ""), 0, 4 - nchar(TIME_SET)), TIME_SET), format="%H%M"), format = "%H:%M"),
                                    TIME_HAUL = format(strptime(paste0(mapply(function(x, y) paste0(rep(x, y), collapse = ""), 0, 4 - nchar(TIME_HAUL)), TIME_HAUL), format="%H%M"), format = "%H:%M"),
                                    X = NA)
       
-      AL_potlifts <- read.csv(paste0(path, "AL_POTLIFTS.csv")) %>%# Arctic Lady
+      AL_potlifts <- read.csv(paste0(path, "AL_POTLIFTS.csv")) %>% # Arctic Lady
                      filter(!is.na(TIME_HAUL),
                             TIME_HAUL != "") %>%
-                     # dplyr::filter(SPN %in% 1:339) %>% #Hardcoding SS data to removing hotspot tagging sites and Gear code 42
-                     dplyr::rename(GEAR_CODE = GEAR_Code) %>%
                      dplyr::mutate(SPN = as.integer(SPN), GEAR_CODE = ifelse(GEAR_CODE == 42, 42, "")) 
       
       potlifts <- rbind(SB_potlifts, AL_potlifts) %>%
                   filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE" & is.na(GEAR_CODE) == TRUE | GEAR_CODE == 44 | GEAR_CODE == "") %>%
-                  mutate(BUOY = paste0("X", BUOY)) %>%
-                  filter(!nchar(POT_ID) > 3) # filter out CAM, COFFIN, and BAIT POT_IDs
+                  mutate(BUOY = paste0("X", BUOY)) #%>%
+                  #filter(!nchar(POT_ID) > 3) # filter out CAM, COFFIN, and BAIT POT_IDs
       
       
 # PROCESS DATA ----------------------------------------------------------------------------------------------------------------
@@ -104,23 +101,9 @@
                       dplyr::rename(SHELL_CONDITION = CRAB_SHELL_CONDITION, EGG_COLOR = CRAB_EGG_COLOR,
                                     EGG_CONDITION = CRAB_EGG_CONDITION, CLUTCH_SIZE = CRAB_EGG_CLUTCH_SIZE,
                                     LENGTH = CARAPACE_LENGTH) %>%
-                      right_join(., raw_specimen) %>% # need to get catch_sample_id
+                      right_join(., raw_specimen) %>% # get catch_sample_id
                       right_join(samples, ., by = c("HAUL", "HAUL_ID", "SEX", "CATCH_SAMPLE_ID", "SPECIES_CODE", "RECORDING_DEVICE"), 
-                                 relationship = "many-to-many") #%>% %>%
-                      # mutate(LENGTH = ifelse((HAUL == 8 & HAUL_ID == 22 & SPECIMEN_ID == 190) | # modify 2 erroneous small measurements (length x 10)
-                      #                        (HAUL == 9 & HAUL_ID == 23 & SPECIMEN_ID == 214), 
-                      #                        LENGTH*10, LENGTH)) %>%
-                      # distinct() %>%
-                      # filter(is.na(HAUL) == "FALSE") # filter out haul 118 AL NAs for now
-      
-      # test <- specimen_sum %>% 
-      #   group_by(HAUL, HAUL_ID, CATCH_SAMPLE_ID, SPECIES_CODE, SPECIES_NAME, SEX, TOSSED, RECORDING_DEVICE, SPECIMEN_ID, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, CLUTCH_SIZE, LENGTH) %>% 
-      #   filter(n()>1)
-                      
-      # test <- raw_specimen_bio %>%
-      #   dplyr::group_by(HAUL, HAUL_ID, SPECIMEN_ID, RECORDING_DEVICE, BIOMETRIC_NAME) %>%
-      #   dplyr::summarise(n = dplyr::n(), .groups = "drop") %>%
-      #   dplyr::filter(n > 1L) 
+                                 relationship = "many-to-many")
       
   # Calculate sampling factor from specimen summary table, join back with specimen_sum file to 
   # get specimen information, join with catch file to get vessel and pot #s, join with potlifts
@@ -136,7 +119,7 @@
                                           multiple = "all") %>%
                         dplyr::select(-c(WEIGHT)) %>% # remove WEIGHT, gets re-added with catch joining
                         dplyr::right_join(catch %>% select(-c(RECORDING_DEVICE, ID)), ., 
-                                          by = c("HAUL", "HAUL_ID", "SPECIES_CODE"), #RECORDING_DEVICE (*maybe need this once we have both vessels?)
+                                          by = c("HAUL", "HAUL_ID", "SPECIES_CODE"), 
                                           multiple = "all") %>%
                         dplyr::left_join(specimen) %>%
                         distinct() %>%
@@ -147,19 +130,37 @@
                         dplyr::select(CRUISE, VESSEL, SPN, POT_ID, BUOY, LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F,
                                       SPECIES_CODE, SEX, LENGTH, WIDTH, SAMPLING_FACTOR, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, 
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
-                                      CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x) %>%
-                        dplyr::filter(is.na(POT_ID) == "FALSE") # filter out special projects pots
+                                      CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x) 
+      
       
   # Process specimen table for Oracle, save
+    # standard pots
       specimen_table %>%
         dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
-        dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% # MAY CHANGE BUOY TO ACTUAL STATION
+        dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
+        filter(!nchar(HAUL) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
         write.csv("./DataForOracle/Processed_Pot_Specimen_Data.csv", row.names = FALSE)
+        
+    # experimental pots
+        specimen_table %>%
+          dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
+          dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
+          filter(!nchar(HAUL) <= 3) %>% # filter out standard POT_IDs
+        write.csv("./DataForOracle/Processed_Pot_Specimen_Data_experimental.csv", row.names = FALSE)
       
   # Process specimen table with all haul data, save
+    # standard pots
       specimen_table %>% 
         rename(NOTES = NOTES.x) %>%
+        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
         write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
+        
+    # experimental pots
+      specimen_table %>%
+        rename(NOTES = NOTES.x) %>%
+        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+      write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data_experimental.csv",
+                row.names = FALSE)
       
   # Update catch summary table with new crab #s from sampling factor
       catch_summary <- specimen_table %>%
@@ -174,10 +175,20 @@
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
       
   # Process catch_summary table for Oracle, save
+    # standard pots
       catch_summary %>%
         dplyr::select(!N_ENTRIES) %>%
         dplyr::rename(HAUL = SPN) %>%
+        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
         write.csv("./DataForOracle/Processed_Pot_Catch_Summary.csv", row.names = FALSE)
+        
+    # experimental pots
+      catch_summary %>%
+        dplyr::select(!N_ENTRIES) %>%
+        dplyr::rename(HAUL = SPN) %>%
+        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+      write.csv("./DataForOracle/Processed_Pot_Catch_Summary_experimental.csv",
+                row.names = FALSE)
 
       
 # CALCULATE BBRKC CPUE -------------------------------------------------------------------------------------------------------     
@@ -194,7 +205,6 @@
                                                         (SPECIES_CODE == 69322 & SEX == 1 & LENGTH < 135) ~ "Sublegal male")) %>%
                dplyr::filter(is.na(MAT_SEX) == "FALSE")
       
-      
       mat_spec <- rbind(maturity, legal) #bind
       
       
@@ -208,6 +218,11 @@
     # Change vessel #s to names in potlifts file
       potlifts <- potlifts %>%
                   dplyr::mutate(VESSEL = ifelse(VESSEL == 162, "Arctic Lady", "Seabrooke"))
+      
+      potlifts %>% 
+        select(VESSEL, SPN, POT_ID, BUOY, DATE_SET, TIME_SET, LAT_DD, LON_DD, DEPTH_F, 
+               DATE_HAUL, TIME_HAUL, SOAK_TIME, GEAR_CODE, TEMP_LOGGER, NOTES) %>%
+        write.csv(., "./Data/CPS2_2024_Potlifts.csv", row.names = FALSE)
   
   # Expand potlifts file to all mat-sex categories and potlifts, join to positive catch file to get zeros 
       mat_sex_combos <- c("Mature male", "Immature male", "Mature female", "Immature female", "Legal male", "Sublegal male")
@@ -219,45 +234,24 @@
                   dplyr::select(VESSEL, SPN, POT_ID, BUOY, LAT_DD, LON_DD, DATE_SET, TIME_SET, DATE_HAUL, TIME_HAUL, SOAK_TIME,
                                 MAT_SEX, COUNT, CATCH_PER_HOUR)
       
-  # Save csv
-      write.csv(pot_cpue, "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
-      
-
-  # # Summarize counts by spp/sex per station
-  # crab_sum <- specimen_table %>%
-  #   dplyr::group_by(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SEX, SPECIES_CODE) %>%
-  #   dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-  #   dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
-  #   dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
-  #                                            (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC",
-  #                                            (SPECIES_CODE == 68560 & SEX == 1) ~ "Male bairdi",
-  #                                            (SPECIES_CODE == 68560 & SEX == 2) ~ "Female bairdi"))
-  # 
-  # spp_sex_combos <- c("Male RKC", "Female RKC", "Male bairdi", "Female bairdi")
-  # pot_cpue <- crab_sum %>%
-  #   dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos,
-  #                                 potlifts)) %>%
-  #   replace_na(list(COUNT = 0)) %>%
-  #   dplyr::select(VESSEL, POT_ID, LAT_DD, LON_DD,
-  #                 SPP_SEX, COUNT) %>%
-  #   pivot_wider(., id_cols = c(VESSEL, POT_ID, LAT_DD, LON_DD,),
-  #               names_from = "SPP_SEX", values_from = "COUNT") %>%
-  #   dplyr::rename(STATION = POT_ID) %>%
-  #   write.csv("./Data/Pot_Catch_Summary_bySppSexStation_RKC.csv", row.names = FALSE)
+  # Save .csvs
+      pot_cpue %>%
+        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+        write.csv(., "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
+        
+      pot_cpue %>%
+        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+      write.csv(., "./Outputs/CPS2_2024_potcatch_experimental.csv", row.names = FALSE)
       
       
-      
-# BYCATCH -----------------------------------------------------------------------
+# BYCATCH --------------------------------------------------------------------------------------------------------------------
   # Process data
-      bycatch <- rbind(read.csv(paste0(path, "AL_BYCATCH.csv")),# %>%
-                              # select(!c(#RKC.Male.in.NonSurveyPots, RKC.Female.in.NonSurvey.Pots,
-                              #           Pollock, Starry.Flounder)), 
-                      read.csv(paste0(path, "SB_Bycatch.csv"))) %>%
+      bycatch <- rbind(read.csv(paste0(path, "AL_BYCATCH.csv")),
+                       read.csv(paste0(path, "SB_Bycatch.csv"))) %>%
                  # remove incomplete haul records
                  filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE") %>%
                  mutate(SPN = as.numeric(as.character(SPN)), VESSEL = ifelse(VESSEL == 162, "Arctic Lady", "Seabrooke")) %>%
-                 # filter(is.na(SPN) == FALSE, !(VESSEL == "Seabrooke" & SPN %in% 300:311)) %>%
-                 right_join(potlifts %>% select(c(VESSEL, SPN, LON_DD, LAT_DD)), .) %>%
+                 right_join(potlifts %>% select(c(VESSEL, SPN, POT_ID, LON_DD, LAT_DD)), .) %>%
                  dplyr::filter(is.na(LON_DD) == "FALSE") %>% # filter out special projects pots
                  replace(., is.na(.), 0) %>%
                  # sum across male and female crabs to get species-level counts
@@ -265,36 +259,51 @@
                                Snow = MaleSnow + FemaleSnow,
                                Hybrid = MaleHybrid + FemaleHybrid) 
       
-  # Save .csv
-    write.csv(bycatch, "./Outputs/CPS2_2024_POT_bycatch.csv", row.names = FALSE)
+      
+  # Save .csvs for crab and fish bycatch separately, and combined for experimental pots
+      bycatch %>%
+        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+        select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, MaleTanner, FemaleTanner, MaleSnow, FemaleSnow, 
+               MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid) %>%
+        write.csv(., "./Outputs/CPS2_2024_pot_crab_bycatch.csv", row.names = FALSE)
+      
+      bycatch %>%
+        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+        select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, PacificCod, Halibut, 
+               GreatSculpin, YellowfinSole, Pollock, StarryFlounder, Other) %>%
+        write.csv(., "./Outputs/CPS2_2024_pot_fish_bycatch.csv", row.names = FALSE)
+      
+      bycatch %>%
+        filter(!nchar(POT_ID) <= 3) %>% # filter out standard BAIT POT_IDs
+      write.csv(., "./Outputs/CPS2_2024_pot_bycatch_experimental.csv", row.names = FALSE)
   
     
-  # Summarize counts by spp/sex per station
-    crab_sum <- specimen_table %>%
-                dplyr::group_by(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SEX, SPECIES_CODE) %>%
-                dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-                dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
-                dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
-                                                         (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC"))
+  # # Summarize counts by spp/sex per station
+  #   crab_sum <- specimen_table %>%
+  #               dplyr::group_by(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SEX, SPECIES_CODE) %>%
+  #               dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
+  #               dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
+  #               dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
+  #                                                        (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC"))
+  # 
+  #   spp_sex_combos <- c("Male RKC", "Female RKC")
+  #     
+  #   crab_sum %>%
+  #     dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos,
+  #                                   potlifts)) %>%
+  #     replace_na(list(COUNT = 0)) %>%
+  #     dplyr::select(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
+  #     pivot_wider(., id_cols = c(VESSEL, SPN, POT_ID, LAT_DD, LON_DD),
+  #                 names_from = "SPP_SEX", values_from = "COUNT") %>%
+  #     left_join(., bycatch %>% select(VESSEL, SPN, MaleTanner, FemaleTanner)) %>%
+  #     dplyr::select(-c(SPN)) %>%
+  #     dplyr::rename(STATION = POT_ID, 
+  #                   "Male bairdi" = MaleTanner,
+  #                   "Female bairdi" = FemaleTanner) %>%
+  #     write.csv("./Data/PotCatchTotals_bySppSexStation.csv", row.names = FALSE)
 
-    spp_sex_combos <- c("Male RKC", "Female RKC")
-      
-    crab_sum %>%
-      dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos,
-                                    potlifts)) %>%
-      replace_na(list(COUNT = 0)) %>%
-      dplyr::select(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
-      pivot_wider(., id_cols = c(VESSEL, SPN, POT_ID, LAT_DD, LON_DD),
-                  names_from = "SPP_SEX", values_from = "COUNT") %>%
-      left_join(., bycatch %>% select(VESSEL, SPN, MaleTanner, FemaleTanner)) %>%
-      dplyr::select(-c(SPN)) %>%
-      dplyr::rename(STATION = POT_ID, 
-                    "Male bairdi" = MaleTanner,
-                    "Female bairdi" = FemaleTanner) %>%
-      write.csv("./Data/PotCatchTotals_bySppSexStation.csv", row.names = FALSE)
 
-
-# ERROR CHECKING -----------------------------------------------------------------------      
+# ERROR CHECKING ------------------------------------------------------------------------------------------------------------
       
   # Load error checking function
     source("./Scripts/error_check.R")
