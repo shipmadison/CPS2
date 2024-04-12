@@ -54,12 +54,12 @@
                                        "Yellowfin sole", "Pollock", "Starry flounder", "Rock sole"),
                                SPP_LABS = c("MaleTanner", "FemaleTanner", "Tanner", "MaleSnow", "FemaleSnow", "Snow", 
                                             "MaleHybrid", "FemaleHybrid", "Hybrid", "HairCrab", "PacificCod", "Halibut", 
-                                            "GreatSculpin", "YellowfinSole", "Pollock", "Starry.Flounder", "RockSole"))
+                                            "GreatSculpin", "YellowfinSole", "Pollock", "StarryFlounder", "RockSole"))
     
     crab <- c("MaleTanner", "FemaleTanner", "Tanner", "MaleSnow", "FemaleSnow", "Snow", 
               "MaleHybrid", "FemaleHybrid", "Hybrid", "HairCrab")
     fish <- c("Hybrid", "HairCrab", "PacificCod", "Halibut", "GreatSculpin", 
-              "YellowfinSole", "Pollock", "Starry.Flounder", "RockSole")  
+              "YellowfinSole", "Pollock", "StarryFlounder", "RockSole")  
   
 
   
@@ -192,7 +192,7 @@
                           plot.subtitle = element_text(size = 12))
     
     # Save figures
-    ggsave(plot = bycatch.maps, paste0("./Figures/", species, "_map.png"),
+    ggsave(plot = bycatch.maps, paste0("./Figures/bycatch/", species, "_map.png"),
            height = 7, width = 10, units = "in")
   }
   
