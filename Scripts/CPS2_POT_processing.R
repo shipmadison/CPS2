@@ -68,7 +68,8 @@
       AL_potlifts <- read.csv(paste0(path, "AL_POTLIFTS.csv")) %>% # Arctic Lady
                      filter(!is.na(TIME_HAUL),
                             TIME_HAUL != "") %>%
-                     dplyr::mutate(SPN = as.integer(SPN), GEAR_CODE = ifelse(GEAR_CODE == 42, 42, "")) 
+                     dplyr::mutate(SPN = as.integer(SPN), GEAR_CODE = ifelse(GEAR_CODE == 42, 42, ""))  %>%
+                     filter(!SPN == 215)
       
       potlifts <- rbind(SB_potlifts, AL_potlifts) %>%
                   filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE" & is.na(GEAR_CODE) == TRUE | GEAR_CODE == 44 | GEAR_CODE == "") %>%
@@ -130,37 +131,65 @@
                         dplyr::select(CRUISE, VESSEL, SPN, POT_ID, BUOY, LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F,
                                       SPECIES_CODE, SEX, LENGTH, WIDTH, SAMPLING_FACTOR, SHELL_CONDITION, EGG_COLOR, EGG_CONDITION, 
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
-                                      CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x) 
+                                      CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES.x)  
+      
+  # Fix shell condition designations for AL males
+    # Prior to 3/24/24 Arctic Lady likely misclassifying some of the SC3 males as SC2.  
+    # Males with light scratching and some barnacles were still called SC2.  
+    # Starting on 3/24/24 these crab will be classified as SC3.
+    # Adding 1 to all males shell condition 2+ before March 24th for the Arctic Lady:
+      specimen_table <- specimen_table %>%
+                         dplyr::mutate(SHELL_CONDITION = dplyr::case_when((VESSEL == "Arctic Lady" &
+                                                                           DATE_HAUL < "3/24/2024" & 
+                                                                           SHELL_CONDITION > 1 &
+                                                                           SEX == 1) ~ (SHELL_CONDITION + 1),
+                                                                          TRUE ~ SHELL_CONDITION)) %>%
+                        dplyr::filter(POT_ID != "G35") # remove duplicate G-35 sample
+                                                                          
+       # SC_check <- specimen_table %>%
+       #             dplyr::filter(DATE_HAUL < "3/24/2024" &  SHELL_CONDITION > 1) %>%
+       #             group_by(VESSEL, SHELL_CONDITION, SEX) %>%
+       #             summarise(N_SC = n())
+       # 
+       # SC_check2 <- specimen_table2 %>%
+       #             dplyr::filter(DATE_HAUL < "3/24/2024" &  SHELL_CONDITION > 1) %>%
+       #             group_by(VESSEL, SHELL_CONDITION, SEX) %>%
+       #             summarise(N_SC = n())
       
       
-  # Process specimen table for Oracle, save
-    # standard pots
-      specimen_table %>%
-        dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
-        dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
-        filter(!nchar(HAUL) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-        write.csv("./DataForOracle/Processed_Pot_Specimen_Data.csv", row.names = FALSE)
-        
-    # experimental pots
-        specimen_table %>%
-          dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
-          dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
-          filter(!nchar(HAUL) <= 3) %>% # filter out standard POT_IDs
-        write.csv("./DataForOracle/Processed_Pot_Specimen_Data_experimental.csv", row.names = FALSE)
+  # # Process specimen table for Oracle, save
+  #   # standard pots
+  #     specimen_table %>%
+  #       dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
+  #       dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
+  #       filter(!nchar(HAUL) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+  #       write.csv("./DataForOracle/Processed_Pot_Specimen_Data.csv", row.names = FALSE)
+  #       
+  #   # experimental pots
+  #       specimen_table %>%
+  #         dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
+  #         dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
+  #         filter(!nchar(HAUL) <= 3) %>% # filter out standard POT_IDs
+  #       write.csv("./DataForOracle/Processed_Pot_Specimen_Data_experimental.csv", row.names = FALSE)
       
   # Process specimen table with all haul data, save
-    # standard pots
-      specimen_table %>% 
-        rename(NOTES = NOTES.x) %>%
-        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-        write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
-        
-    # experimental pots
-      specimen_table %>%
-        rename(NOTES = NOTES.x) %>%
-        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-      write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data_experimental.csv",
-                row.names = FALSE)
+    # # standard pots
+    #   specimen_table %>% 
+    #     rename(NOTES = NOTES.x) %>%
+    #     filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+    #     write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
+    #     
+    # # experimental pots
+    #   specimen_table %>%
+    #     rename(NOTES = NOTES.x) %>%
+    #     filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+    #   write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data_experimental.csv",
+    #             row.names = FALSE)
+      
+    # all pots
+        specimen_table %>%
+          rename(NOTES = NOTES.x) %>%
+          write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
       
   # Update catch summary table with new crab #s from sampling factor
       catch_summary <- specimen_table %>%
@@ -174,21 +203,21 @@
   # Print lines where N_CRAB =/= N_ENTRIES
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
       
-  # Process catch_summary table for Oracle, save
-    # standard pots
-      catch_summary %>%
-        dplyr::select(!N_ENTRIES) %>%
-        dplyr::rename(HAUL = SPN) %>%
-        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-        write.csv("./DataForOracle/Processed_Pot_Catch_Summary.csv", row.names = FALSE)
-        
-    # experimental pots
-      catch_summary %>%
-        dplyr::select(!N_ENTRIES) %>%
-        dplyr::rename(HAUL = SPN) %>%
-        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-      write.csv("./DataForOracle/Processed_Pot_Catch_Summary_experimental.csv",
-                row.names = FALSE)
+  # # Process catch_summary table for Oracle, save
+  #   # standard pots
+  #     catch_summary %>%
+  #       dplyr::select(!N_ENTRIES) %>%
+  #       dplyr::rename(HAUL = SPN) %>%
+  #       filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+  #       write.csv("./DataForOracle/Processed_Pot_Catch_Summary.csv", row.names = FALSE)
+  #       
+  #   # experimental pots
+  #     catch_summary %>%
+  #       dplyr::select(!N_ENTRIES) %>%
+  #       dplyr::rename(HAUL = SPN) %>%
+  #       filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+  #     write.csv("./DataForOracle/Processed_Pot_Catch_Summary_experimental.csv",
+  #               row.names = FALSE)
 
       
 # CALCULATE BBRKC CPUE -------------------------------------------------------------------------------------------------------     
@@ -235,47 +264,59 @@
                                 MAT_SEX, COUNT, CATCH_PER_HOUR)
       
   # Save .csvs
+      # pot_cpue %>%
+      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+      #   write.csv(., "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
+      #   
+      # pot_cpue %>%
+      #   filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
+      # write.csv(., "./Outputs/CPS2_2024_potcatch_experimental.csv", row.names = FALSE)
+      
       pot_cpue %>%
-        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
         write.csv(., "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
-        
-      pot_cpue %>%
-        filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-      write.csv(., "./Outputs/CPS2_2024_potcatch_experimental.csv", row.names = FALSE)
       
       
 # BYCATCH --------------------------------------------------------------------------------------------------------------------
   # Process data
-      bycatch <- rbind(read.csv(paste0(path, "AL_BYCATCH.csv")),
+      bycatch <- rbind(read.csv(paste0(path, "AL_Bycatch.csv")),
                        read.csv(paste0(path, "SB_Bycatch.csv"))) %>%
                  # remove incomplete haul records
                  filter(DATE_HAUL != "", is.na(VESSEL) == "FALSE") %>%
-                 mutate(SPN = as.numeric(as.character(SPN)), VESSEL = ifelse(VESSEL == 162, "Arctic Lady", "Seabrooke")) %>%
+                 mutate(SPN = as.numeric(as.character(SPN)), 
+                        VESSEL = ifelse(VESSEL == 162, "Arctic Lady", "Seabrooke")) %>%
                  right_join(potlifts %>% select(c(VESSEL, SPN, POT_ID, LON_DD, LAT_DD)), .) %>%
                  dplyr::filter(is.na(LON_DD) == "FALSE") %>% # filter out special projects pots
                  replace(., is.na(.), 0) %>%
                  # sum across male and female crabs to get species-level counts
                  dplyr::mutate(Tanner = MaleTanner + FemaleTanner,
                                Snow = MaleSnow + FemaleSnow,
-                               Hybrid = MaleHybrid + FemaleHybrid) 
+                               Hybrid = MaleHybrid + FemaleHybrid) %>%
+                 dplyr::filter(!(POT_ID == "G35" & SPN == 215)) # remove duplicate G-35 sample
       
       
   # Save .csvs for crab and fish bycatch separately, and combined for experimental pots
+      # bycatch %>%
+      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+      #   select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, MaleTanner, FemaleTanner, MaleSnow, FemaleSnow, 
+      #          MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid, HairCrab) %>%
+      #   write.csv(., "./Outputs/CPS2_2024_pot_crab_bycatch.csv", row.names = FALSE)
+      # 
+      # bycatch %>%
+      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
+      #   select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, PacificCod, Halibut, 
+      #          GreatSculpin, YellowfinSole, Pollock, StarryFlounder, Other) %>%
+      #   write.csv(., "./Outputs/CPS2_2024_pot_fish_bycatch.csv", row.names = FALSE)
+      # 
+      # bycatch %>%
+      #   filter(!nchar(POT_ID) <= 3) %>% # filter out standard BAIT POT_IDs
+      # write.csv(., "./Outputs/CPS2_2024_pot_bycatch_experimental.csv", row.names = FALSE)
+      
       bycatch %>%
-        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
         select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, MaleTanner, FemaleTanner, MaleSnow, FemaleSnow, 
-               MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid) %>%
-        write.csv(., "./Outputs/CPS2_2024_pot_crab_bycatch.csv", row.names = FALSE)
+               MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid, HairCrab,
+               PacificCod, Halibut, GreatSculpin, YellowfinSole, Pollock, StarryFlounder, Other) %>%
+        write.csv(., "./Outputs/CPS2_2024_pot_bycatch.csv", row.names = FALSE)
       
-      bycatch %>%
-        filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-        select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, PacificCod, Halibut, 
-               GreatSculpin, YellowfinSole, Pollock, StarryFlounder, Other) %>%
-        write.csv(., "./Outputs/CPS2_2024_pot_fish_bycatch.csv", row.names = FALSE)
-      
-      bycatch %>%
-        filter(!nchar(POT_ID) <= 3) %>% # filter out standard BAIT POT_IDs
-      write.csv(., "./Outputs/CPS2_2024_pot_bycatch_experimental.csv", row.names = FALSE)
   
     
   # # Summarize counts by spp/sex per station
