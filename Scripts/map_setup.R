@@ -8,7 +8,7 @@
   library(tidyverse)
   library(gsubfn)
   library(terra)
-  library(rgdal)
+  # library(rgdal)
   library(colorRamps)
   library(sf)
   library(viridis)
@@ -37,7 +37,10 @@
     
       RKCSA <- st_read(paste0(spatial_path, "RKCSA layers/RKCSA.shp"))
       
-      CPS1_bound <- st_read(paste0(spatial_path, "CPS1_survey_boundary.shp"))
+      # CPS1_bound <- st_read(paste0(spatial_path, "CPS1_survey_boundary.shp"))
+      CPS1_bound <- st_read(paste0(spatial_path, "CPS1_survey_boundary.shp")) %>%
+                    st_transform(map.crs) #%>%
+                    # vect()
       
       CPS1_bathy <- st_read(paste0(spatial_path, "CPS1_project_depth_contour.shp")) %>%
                     st_transform(map.crs)
