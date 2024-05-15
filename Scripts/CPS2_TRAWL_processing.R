@@ -1,14 +1,14 @@
 # PURPOSE -------------------------------------------------------------------------------------------------------------------
-# 1) To automate processing trawl data specimen tables and catch summaries from Collaborative Pot 
-#    Sampling II (CPS2) 2024 for BBRKC
-# ...2) To run error checks on processed specimen and catch summaries
-# ...3) To calculate and map cpue by haul and maturity/sex category for BBRKC
-
-# Authors: Shannon Hennessey and Emily Ryznar, NOAA-AFSC
+  # 1) To automate processing trawl data specimen tables and catch summaries from Collaborative Pot 
+  #    Sampling II (CPS2) 2024 for BBRKC
+  # 2) To calculate cpue by haul and maturity/sex category for BBRKC
+  # 3) To run error checks on processed specimen and catch summaries
+  
+  # Authors: Shannon Hennessey, Emily Ryznar, NOAA-AFSC
 
 
 # INSTALL PACKAGES ----------------------------------------------------------------------------------------------------------
-#install.packages("tidyverse")
+  # install.packages("tidyverse")
 
 
 # LOAD PACKAGES -------------------------------------------------------------------------------------------------------------
@@ -48,6 +48,7 @@
       hauls <- read.csv("Y:/KOD_Survey/CPS2/Data/Trawl Data/VA_HAULS.csv") %>% # Vesteraalen
                dplyr::filter(SAMPLED == 1)
     
+      
 # PROCESS CRAB DATA ----------------------------------------------------------------------------------------------------------------
     
       samples <- left_join(raw_sample_values %>% select(HAUL_ID, CATCH_SAMPLE_VALUE_ID, CATCH_SAMPLE_ID, WEIGHT, KEEP, 
@@ -82,7 +83,6 @@
                                  relationship = "many-to-many") %>%
                       distinct()
 
-    
   # Calculate sampling factor from specimen summary table, join back with specimen_sum file to 
   # get specimen information, join with catch file to get vessel and station #s, join with hauls
   # file to get lat/lon, set/haul date and time for each haul (with positive catch)
@@ -103,15 +103,8 @@
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
                                       CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES)
     
-  # # Process specimen table for Oracle, save
-  #     specimen_table %>%
-  #       dplyr::select(!c(LAT_DD, LON_DD, NOTES)) %>% #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, 
-  #       write.csv("./DataForOracle/Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
-    
+
   # Process specimen table with all haul data, save
-      # specimen_table %>% 
-      #   write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
-      
       specimen_table %>% dplyr::filter(SPECIES_CODE == 69322) %>% # filter just RKC
         write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
     
@@ -128,33 +121,7 @@
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
       # R6 - 1 less tanner than should be?
                    
-  # # Process catch_summary table for Oracle, save
-  #     catch_summary %>%
-  #       dplyr::select(!N_ENTRIES) %>%
-  #       write.csv("./DataForOracle/Processed_Trawl_Catch_Summary.csv", row.names = FALSE)
-    
-  # # Summarize counts by spp/sex per station
-  #     crab_sum <- specimen_table %>%
-  #                 dplyr::group_by(VESSEL, HAUL, STATION, LAT_DD, LON_DD, SEX, SPECIES_NAME, SPECIES_CODE) %>%
-  #                 dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-  #                 dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
-  #                 dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
-  #                                                          (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC",
-  #                                                          (SPECIES_CODE == 68560 & SEX == 1) ~ "Male bairdi",
-  #                                                          (SPECIES_CODE == 68560 & SEX == 2) ~ "Female bairdi"))
-  # 
-  #     spp_sex_combos <- c("Male RKC", "Female RKC", "Male bairdi", "Female bairdi")
-  # 
-  #     crab_sum %>%
-  #         dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos, hauls)) %>%
-  #         replace_na(list(COUNT = 0, VESSEL = "Vesteraalen")) %>%
-  #         dplyr::select(VESSEL, STATION,LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
-  #         pivot_wider(., id_cols = c(VESSEL, STATION, LAT_DD, LON_DD,),
-  #                     names_from = "SPP_SEX", values_from = "COUNT") %>%
-  #         select(VESSEL, STATION, LAT_DD, LON_DD, "Male RKC", "Female RKC", "Male bairdi", "Female bairdi") %>%
-  #         write.csv("./Data/TrawlCatchTotals_bySppSexStation.csv", row.names = FALSE)
-                
-    
+
 # CALCULATE BBRKC CPUE -------------------------------------------------------------------------------------------------------     
     
   # Make non-overlapping maturity/sex and legal/sublegal categories, bind together

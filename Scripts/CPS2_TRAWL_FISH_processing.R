@@ -1,10 +1,8 @@
 # PURPOSE -------------------------------------------------------------------------------------------------------------------
-# 1) To automate processing trawl data specimen tables and catch summaries from Collaborative Pot 
-#    Sampling II (CPS2) 2024 for BBRKC
-# ...2) To run error checks on processed specimen and catch summaries
-# ...3) To calculate and map cpue by haul and maturity/sex category for BBRKC
-
-# Authors: Shannon Hennessey and Emily Ryznar, NOAA-AFSC
+  # 1) To automate processing trawl data specimen tables and catch summaries from Collaborative Pot 
+  #    Sampling II (CPS2) 2024 for groundfish species
+  
+  # Authors: Shannon Hennessey, Emily Ryznar, NOAA-AFSC
 
 
 # INSTALL PACKAGES ----------------------------------------------------------------------------------------------------------

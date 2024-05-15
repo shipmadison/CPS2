@@ -1,8 +1,8 @@
 # PURPOSE -------------------------------------------------------------------------------------------------------------------
   # 1) To automate processing pot data specimen tables and catch summaries from Collaborative Pot 
   #    Sampling II (CPS2) 2024 for BBRKC
-  # 2) To run error checks on processed specimen and catch summaries
-  # 3) To calculate and map cpue by pot and maturity/sex category for BBRKC
+  # 2) To calculate cpue by haul and maturity/sex category for BBRKC
+  # 3) To run error checks on processed specimen and catch summaries
 
   # Authors: Shannon Hennessey, Emily Ryznar, NOAA-AFSC
 
@@ -145,48 +145,9 @@
                                                                            SEX == 1) ~ (SHELL_CONDITION + 1),
                                                                           TRUE ~ SHELL_CONDITION)) %>%
                         dplyr::filter(POT_ID != "G35") # remove duplicate G-35 sample
-                                                                          
-       # SC_check <- specimen_table %>%
-       #             dplyr::filter(DATE_HAUL < "3/24/2024" &  SHELL_CONDITION > 1) %>%
-       #             group_by(VESSEL, SHELL_CONDITION, SEX) %>%
-       #             summarise(N_SC = n())
-       # 
-       # SC_check2 <- specimen_table2 %>%
-       #             dplyr::filter(DATE_HAUL < "3/24/2024" &  SHELL_CONDITION > 1) %>%
-       #             group_by(VESSEL, SHELL_CONDITION, SEX) %>%
-       #             summarise(N_SC = n())
-      
-      
-  # # Process specimen table for Oracle, save
-  #   # standard pots
-  #     specimen_table %>%
-  #       dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
-  #       dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
-  #       filter(!nchar(HAUL) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-  #       write.csv("./DataForOracle/Processed_Pot_Specimen_Data.csv", row.names = FALSE)
-  #       
-  #   # experimental pots
-  #       specimen_table %>%
-  #         dplyr::select(!c(LAT_DD, LON_DD, DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, NOTES.x)) %>%
-  #         dplyr::rename(HAUL = POT_ID, STATION = BUOY) %>% 
-  #         filter(!nchar(HAUL) <= 3) %>% # filter out standard POT_IDs
-  #       write.csv("./DataForOracle/Processed_Pot_Specimen_Data_experimental.csv", row.names = FALSE)
       
   # Process specimen table with all haul data, save
-    # # standard pots
-    #   specimen_table %>% 
-    #     rename(NOTES = NOTES.x) %>%
-    #     filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-    #     write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
-    #     
-    # # experimental pots
-    #   specimen_table %>%
-    #     rename(NOTES = NOTES.x) %>%
-    #     filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-    #   write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data_experimental.csv",
-    #             row.names = FALSE)
-      
-    # all pots
+     # all pots
         specimen_table %>%
           rename(NOTES = NOTES.x) %>%
           write.csv("./Outputs/CPS2_2024_Processed_Pot_Specimen_Data.csv", row.names = FALSE)
@@ -203,23 +164,7 @@
   # Print lines where N_CRAB =/= N_ENTRIES
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
       
-  # # Process catch_summary table for Oracle, save
-  #   # standard pots
-  #     catch_summary %>%
-  #       dplyr::select(!N_ENTRIES) %>%
-  #       dplyr::rename(HAUL = SPN) %>%
-  #       filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-  #       write.csv("./DataForOracle/Processed_Pot_Catch_Summary.csv", row.names = FALSE)
-  #       
-  #   # experimental pots
-  #     catch_summary %>%
-  #       dplyr::select(!N_ENTRIES) %>%
-  #       dplyr::rename(HAUL = SPN) %>%
-  #       filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-  #     write.csv("./DataForOracle/Processed_Pot_Catch_Summary_experimental.csv",
-  #               row.names = FALSE)
 
-      
 # CALCULATE BBRKC CPUE -------------------------------------------------------------------------------------------------------     
   
   # Make non-overlapping maturity/sex and legal/sublegal categories, bind together
@@ -264,14 +209,6 @@
                                 MAT_SEX, COUNT, CATCH_PER_HOUR)
       
   # Save .csvs
-      # pot_cpue %>%
-      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-      #   write.csv(., "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
-      #   
-      # pot_cpue %>%
-      #   filter(!nchar(POT_ID) <= 3) %>% # filter out standard POT_IDs
-      # write.csv(., "./Outputs/CPS2_2024_potcatch_experimental.csv", row.names = FALSE)
-      
       pot_cpue %>%
         write.csv(., "./Outputs/CPS2_2024_potcatch.csv", row.names = FALSE)
       
@@ -294,23 +231,7 @@
                  dplyr::filter(!(POT_ID == "G35" & SPN == 215)) # remove duplicate G-35 sample
       
       
-  # Save .csvs for crab and fish bycatch separately, and combined for experimental pots
-      # bycatch %>%
-      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-      #   select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, MaleTanner, FemaleTanner, MaleSnow, FemaleSnow, 
-      #          MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid, HairCrab) %>%
-      #   write.csv(., "./Outputs/CPS2_2024_pot_crab_bycatch.csv", row.names = FALSE)
-      # 
-      # bycatch %>%
-      #   filter(!nchar(POT_ID) > 3) %>% # filter out CAM, COFFIN, and BAIT POT_IDs
-      #   select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, PacificCod, Halibut, 
-      #          GreatSculpin, YellowfinSole, Pollock, StarryFlounder, Other) %>%
-      #   write.csv(., "./Outputs/CPS2_2024_pot_fish_bycatch.csv", row.names = FALSE)
-      # 
-      # bycatch %>%
-      #   filter(!nchar(POT_ID) <= 3) %>% # filter out standard BAIT POT_IDs
-      # write.csv(., "./Outputs/CPS2_2024_pot_bycatch_experimental.csv", row.names = FALSE)
-      
+  # Save .csvs 
       bycatch %>%
         select(VESSEL, SPN, LAT_DD, LON_DD, POT_ID, DATE_HAUL, MaleTanner, FemaleTanner, MaleSnow, FemaleSnow, 
                MaleHybrid, FemaleHybrid, Tanner, Snow, Hybrid, HairCrab,
@@ -318,31 +239,6 @@
         write.csv(., "./Outputs/CPS2_2024_pot_bycatch.csv", row.names = FALSE)
       
   
-    
-  # # Summarize counts by spp/sex per station
-  #   crab_sum <- specimen_table %>%
-  #               dplyr::group_by(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SEX, SPECIES_CODE) %>%
-  #               dplyr::reframe(COUNT = sum(SAMPLING_FACTOR)) %>%
-  #               dplyr::filter(SPECIES_CODE %in% c(69322, 68560)) %>%
-  #               dplyr::mutate(SPP_SEX = dplyr::case_when((SPECIES_CODE == 69322 & SEX == 1) ~ "Male RKC",
-  #                                                        (SPECIES_CODE == 69322 & SEX == 2) ~ "Female RKC"))
-  # 
-  #   spp_sex_combos <- c("Male RKC", "Female RKC")
-  #     
-  #   crab_sum %>%
-  #     dplyr::right_join(expand_grid(SPP_SEX = spp_sex_combos,
-  #                                   potlifts)) %>%
-  #     replace_na(list(COUNT = 0)) %>%
-  #     dplyr::select(VESSEL, SPN, POT_ID, LAT_DD, LON_DD, SPP_SEX, COUNT) %>%
-  #     pivot_wider(., id_cols = c(VESSEL, SPN, POT_ID, LAT_DD, LON_DD),
-  #                 names_from = "SPP_SEX", values_from = "COUNT") %>%
-  #     left_join(., bycatch %>% select(VESSEL, SPN, MaleTanner, FemaleTanner)) %>%
-  #     dplyr::select(-c(SPN)) %>%
-  #     dplyr::rename(STATION = POT_ID, 
-  #                   "Male bairdi" = MaleTanner,
-  #                   "Female bairdi" = FemaleTanner) %>%
-  #     write.csv("./Data/PotCatchTotals_bySppSexStation.csv", row.names = FALSE)
-
 
 # ERROR CHECKING ------------------------------------------------------------------------------------------------------------
       
