@@ -21,7 +21,7 @@
       path <- "Y:/KOD_Survey/CPS2/Data/Trawl Data/Crab/"  
 
   # Load summary catch and specimen tables
-      # **delete catch and specimen files 0015, 0019, 0021, 0022, 0028, 0030, 0031, 0040, 0053, 0064, 0068, 0088, 0128 because no data
+      # **delete catch and specimen files 0015, 0019, 0021, 0022, 0028, 0030, 0031, 0040, 0053, 0064, 0068, 0088, 0128 because no crab catch
       catch <- list.files(paste0(path, "Catch - FTP/")) %>% 
                purrr::map_df(~read.csv(paste0(path, "Catch - FTP/", .x)))
   
@@ -103,17 +103,17 @@
                                       CLUTCH_SIZE, WEIGHT, DISEASE_CODE, DISEASE_DORSAL, DISEASE_VENTRAL, DISEASE_LEGS,  
                                       CHELA_HEIGHT, MERUS_LENGTH, COMMENTS, NOTES)
     
-  # Process specimen table for Oracle, save
-      specimen_table %>%
-        dplyr::select(!c(LAT_DD, LON_DD, NOTES)) %>% #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, 
-        write.csv("./DataForOracle/Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
+  # # Process specimen table for Oracle, save
+  #     specimen_table %>%
+  #       dplyr::select(!c(LAT_DD, LON_DD, NOTES)) %>% #DATE_HAUL, TIME_HAUL, SOAK_TIME, DEPTH_F, 
+  #       write.csv("./DataForOracle/Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
     
   # Process specimen table with all haul data, save
-      specimen_table %>% 
-        write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
+      # specimen_table %>% 
+      #   write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
       
       specimen_table %>% dplyr::filter(SPECIES_CODE == 69322) %>% # filter just RKC
-        write.csv("./Outputs/CPS2_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
+        write.csv("./Outputs/CPS2_2024_Processed_Trawl_Specimen_Data.csv", row.names = FALSE)
     
   # Update catch summary table with new crab #s from sampling factor
       catch_summary <- specimen_table %>%
@@ -128,10 +128,10 @@
       catch_summary %>% filter(NUMBER_CRAB != N_ENTRIES)
       # R6 - 1 less tanner than should be?
                    
-  # Process catch_summary table for Oracle, save
-      catch_summary %>%
-        dplyr::select(!N_ENTRIES) %>%
-        write.csv("./DataForOracle/Processed_Trawl_Catch_Summary.csv", row.names = FALSE)
+  # # Process catch_summary table for Oracle, save
+  #     catch_summary %>%
+  #       dplyr::select(!N_ENTRIES) %>%
+  #       write.csv("./DataForOracle/Processed_Trawl_Catch_Summary.csv", row.names = FALSE)
     
   # # Summarize counts by spp/sex per station
   #     crab_sum <- specimen_table %>%
@@ -223,7 +223,7 @@
         dplyr::mutate(Tanner = MaleTanner + FemaleTanner,
                       Snow = MaleSnow + FemaleSnow,
                       Hybrid = MaleHybrid + FemaleHybrid) %>%
-        write.csv("./Outputs/CPS2_2024_Trawl_CRAB_bycatch.csv", row.names = FALSE)
+        write.csv("./Outputs/CPS2_2024_trawl_crab_bycatch.csv", row.names = FALSE)
     
       
 # ERROR CHECKING -----------------------------------------------------------------------      
