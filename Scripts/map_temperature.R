@@ -1784,6 +1784,97 @@
         
         ggsave(plot = BBRKC.matfemale.cps2, "./Figures/BBRKC_CPS2matfem_temp.png", height = 7, width = 10, units = "in")
         
-      
+     
+    # CPS1 rescaled temperature -------
+        temp.scaled.cps1 <- ggplot() +
+                        # plot temperature
+                        geom_tile(data = CPS1_temp_df, aes(x = x, y = y, fill = temperature, alpha = 0.8)) +
+                        scale_fill_viridis(name = "Temperature (°C)", option = "plasma", 
+                                           guide = guide_colorbar(title.position = "top", 
+                                                                  discrete = FALSE),
+                                           limits = c(min(c(min(temp_df$temperature), min(CPS1_temp_df$temperature))), 
+                                                      max(c(max(temp_df$temperature), max(CPS1_temp_df$temperature))))) +
+                        guides(alpha = "none") +
+                        new_scale("fill") +
+                        
+                        # plot mapping layers
+                        geom_sf(data = st_transform(map_layers$bathymetry, map.crs), color = alpha("grey70")) +
+                        # geom_sf(data = st_as_sf(BB_strata), fill = NA, mapping = aes(color = "black"), linewidth = 1) +
+                        geom_sf(data = st_as_sf(CPS1_bound), fill = NA, aes(color = "black"), linewidth = 1) +
+                        geom_sf(data = st_as_sf(RKCSA_sub), mapping = aes(color = "red"), fill = NA, alpha= 0.9, linewidth = 1) +
+                        geom_sf(data = st_as_sf(RKCSA), fill = NA,  color = "red", alpha =0.5, linewidth = 1) +
+                        geom_sf(data = st_transform(map_layers$akland, map.crs), fill = "grey80") +
+                        scale_color_manual(values = c("black", "red"), 
+                                           labels = c("CPS Survey Boundary", "Red King Crab Savings Area"),
+                                           name = "") +
+                        guides(color = guide_legend(nrow = 2)) +
+                        scale_x_continuous(breaks = map_layers$lon.breaks)+
+                        scale_y_continuous(breaks = map_layers$lat.breaks)+
+                        labs(title = "2023 BBRKC Collaborative Pot Sampling", subtitle = "Temperature")+
+                        coord_sf(xlim = plot.boundary$x,
+                                 ylim = plot.boundary$y) +
+                        geom_sf_text(sf::st_as_sf(data.frame(lab= c("50m", "100m"), 
+                                                             x = c(-161.5, -165), y = c(58.3, 56.1)),
+                                                  coords = c(x = "x", y = "y"), crs = sf::st_crs(4326)) %>%
+                                       sf::st_transform(crs = map.crs),
+                                     mapping = aes(label = lab))+
+                        theme_bw() +
+                        theme(axis.title = element_blank(),
+                              axis.text = element_text(size = 10),
+                              legend.text = element_text(size = 10),
+                              legend.title = element_text(size = 10),
+                              legend.position = "bottom",
+                              legend.direction = "horizontal",
+                              plot.title = element_text(face = "bold", size = 15),
+                              plot.subtitle = element_text(size = 12))
+                      
+                      ggsave(plot = temp.scaled.cps1, "./Figures/CPS1_scaled_temp.png", height = 7, width = 10, units = "in")
+        
+        
+        # CPS2 BBRKC mature female with temperature -------      
+        temp.scaled.cps2 <- ggplot() +
+                            # plot temperature
+                            geom_tile(data = temp_df, aes(x = x, y = y, fill = temperature, alpha = 0.8)) +
+                            scale_fill_viridis(name = "Temperature (°C)", option = "plasma", 
+                                               guide = guide_colorbar(title.position = "top", 
+                                                                      discrete = FALSE),
+                                               limits = c(min(c(min(temp_df$temperature), min(CPS1_temp_df$temperature))), 
+                                                          max(c(max(temp_df$temperature), max(CPS1_temp_df$temperature))))) +
+                            guides(alpha = "none") +
+                            new_scale("fill") +
+                            
+                            # plot mapping layers
+                            geom_sf(data = st_transform(map_layers$bathymetry, map.crs), color = alpha("grey70")) +
+                            # geom_sf(data = st_as_sf(BB_strata), fill = NA, mapping = aes(color = "black"), linewidth = 1) +
+                            geom_sf(data = st_as_sf(CPS1_bound), fill = NA, aes(color = "black"), linewidth = 1) +
+                            geom_sf(data = st_as_sf(RKCSA_sub), mapping = aes(color = "red"), fill = NA, alpha= 0.9, linewidth = 1) +
+                            geom_sf(data = st_as_sf(RKCSA), fill = NA,  color = "red", alpha =0.5, linewidth = 1) +
+                            geom_sf(data = st_transform(map_layers$akland, map.crs), fill = "grey80") +
+                            scale_color_manual(values = c("black", "red"), 
+                                               labels = c("CPS Survey Boundary", "Red King Crab Savings Area"),
+                                               name = "") +
+                            guides(color = guide_legend(nrow = 2)) +
+                            scale_x_continuous(breaks = map_layers$lon.breaks)+
+                            scale_y_continuous(breaks = map_layers$lat.breaks)+
+                            labs(title = "2024 BBRKC Collaborative Pot Sampling", subtitle = "Temperature")+
+                            coord_sf(xlim = plot.boundary$x,
+                                     ylim = plot.boundary$y) +
+                            geom_sf_text(sf::st_as_sf(data.frame(lab= c("50m", "100m"), 
+                                                                 x = c(-161.5, -165), y = c(58.3, 56.1)),
+                                                      coords = c(x = "x", y = "y"), crs = sf::st_crs(4326)) %>%
+                                           sf::st_transform(crs = map.crs),
+                                         mapping = aes(label = lab))+
+                            theme_bw() +
+                            theme(axis.title = element_blank(),
+                                  axis.text = element_text(size = 10),
+                                  legend.text = element_text(size = 10),
+                                  legend.title = element_text(size = 10),
+                                  legend.position = "bottom",
+                                  legend.direction = "horizontal",
+                                  plot.title = element_text(face = "bold", size = 15),
+                                  plot.subtitle = element_text(size = 12))
+        
+        ggsave(plot = temp.scaled.cps2, "./Figures/CPS2_scaled_temp.png", height = 7, width = 10, units = "in")
+        
       
       
