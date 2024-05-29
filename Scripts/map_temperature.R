@@ -108,7 +108,7 @@
       
       
 # INTERPOLATE TEMPERATURE: Temperature map with bathy, CPS1 outline, and RKCSA -------
-      temp <- read.csv("Y:/KOD_Survey/CPS2/Data/Temperature Data/CPS2_TempData_Combined.csv")
+      temp <- read.csv("./Data/Temperature Data/CPS2_TempData_Combined.csv")
       # ggplot(temp) + geom_point(aes(x = longitude, y = latitude, color = temperature_C))
   
     # Set up interpolation raster
@@ -198,8 +198,7 @@
                                    plot.subtitle = element_text(size = 12))
       
       ggsave(plot = temp_map_continuous, "./Figures/tempcont.png", height = 7, width = 10, units = "in")
-      
-  # Stations by vessel -------
+
 
 # ABUNDANCE MAPS --------------------------------------------------------------------------------------------------------
   # Specify palette
