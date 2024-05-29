@@ -1,0 +1,18 @@
+README
+
+ADF&G Data
+- 2024 Logger Data includes both Arctic Lady and Seabrooke
+- A field for Core Stations was added to indicate whether the logger was in a survey pot of non-survey pot. This is indicated by a Y for Core pot and N for Non-Core pot
+	Core      Survey Pot
+	Non-Core  Bait experiment pots (Arctic Lady)
+                  Camera Pots (Seabrooke)
+- Pots set on 4-2-2024 had been subjected to freezing spray and many of the loggers were encased in ice when set. Thus, the first few measurements were removed to avoid any influence from the ice on the sensors.
+- In .csv format, some of the full timestamps are truncated, but the individual date and time columns are maintained. 
+- Logger 228 is a Temperature only logger. The PHL was used to verify each pot deployment.
+- To account for the distance from the top of the pot to the seafloor, 0.8 meters is added to the recorded depth.
+
+
+Trawl Data
+- Winches stopped is approximately half way through tow, using these coordinates for temperature datapoint.
+- Headline is ~ 1.2m off the seafloor.
+- Headline_C and HeadlineDepth are a single point reading taken from the middle of the tow, not an average.
